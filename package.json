@@ -5,16 +5,27 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "bun scripts/sync.ts --apply --deploy && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "bun scripts/migrate.ts",
+    "import:feed": "bun scripts/sync.ts --apply --changes none",
+    "sync": "bun scripts/sync.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.26",
+    "@libsql/client": "^0.18.0",
+    "@uploadthing/react": "^7.3.3",
     "next": "16.4.6",
+    "posthog-js": "^1.448.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "resend": "^6.38.1",
+    "uploadthing": "^7.7.4"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/bun": "^1.4.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,0 +1,123 @@
+{
+  "site": {
+    "name": "Bus Info",
+    "description": "Look up any bus in Sweden, the UK, Australia or New Zealand by number plate or fleet number.",
+    "switchLanguage": "På svenska",
+    "signIn": "Sign in",
+    "review": "Review queue",
+    "addBus": "Add a bus"
+  },
+  "home": {
+    "title": "Which bus is that?",
+    "signLabel": "Plate, fleet number or vehicle ID",
+    "placeholder": "TYPE A PLATE OR FLEET NO",
+    "search": "Find bus",
+    "intro": "Type a number plate, the fleet number painted on the bus, or the vehicle ID from a live feed. You'll get its age, where it is now and photos of it.",
+    "formatsTitle": "What plates look like",
+    "formats": [
+      [
+        "Sweden",
+        "ABC 12D"
+      ],
+      [
+        "United Kingdom",
+        "SN19 ABC"
+      ],
+      [
+        "Australia",
+        "2345 MO"
+      ],
+      [
+        "New Zealand",
+        "HTZ123"
+      ]
+    ],
+    "coverage": "Live positions come from public realtime feeds in Sweden, England, New South Wales, Queensland, Victoria, Auckland, Wellington and Christchurch."
+  },
+  "search": {
+    "title": "Search results",
+    "results": "{n} buses match “{q}”",
+    "none": "No bus matches “{q}”.",
+    "noneHelp": "Check the plate or fleet number for typos. If the bus isn't in our data yet, you can add it.",
+    "add": "Add this bus",
+    "searchAgain": "Search again"
+  },
+  "bus": {
+    "unknownOperator": "Unknown operator",
+    "ageYearsMonths": "{years} years and {months} months old",
+    "ageYears": "{years} years old",
+    "ageAbout": "About {years} years old",
+    "ageNew": "Less than a month old",
+    "ageUnknown": "Age not known yet",
+    "details": "Details",
+    "plate": "Plate",
+    "fleetNumber": "Fleet number",
+    "vehicleId": "Feed vehicle ID",
+    "operator": "Operator",
+    "country": "Country",
+    "make": "Make",
+    "model": "Model",
+    "body": "Body",
+    "yearBuilt": "Built",
+    "firstRegistered": "First registered",
+    "fuel": "Fuel",
+    "colour": "Colour",
+    "status": "Status",
+    "source": "Data from",
+    "sources": {
+      "curated": "Bus Info contributors",
+      "dvla": "DVLA",
+      "feed": "Live feed"
+    },
+    "statuses": {
+      "active": "In service",
+      "withdrawn": "Withdrawn",
+      "unknown": "Unknown"
+    },
+    "location": "Where it is",
+    "lastSeen": "Seen {time}",
+    "onRoute": "on route {route}",
+    "noLocation": "No position yet. This bus hasn't shown up in a live feed.",
+    "openMap": "Open in Google Maps",
+    "photos": "Photos",
+    "noPhotos": "No photos yet. Upload the first one.",
+    "photoBy": "Photo by {author}",
+    "upload": "Upload photos",
+    "uploadDone": "Uploaded. Your photos appear here once they've been reviewed.",
+    "uploadSignIn": "Sign in to upload photos",
+    "edit": "Suggest a correction",
+    "editSignIn": "Sign in to suggest a correction",
+    "editHelp": "Change any field that's wrong or missing. Changes go live after review.",
+    "send": "Send for review",
+    "sent": "Sent. Your changes go live after review.",
+    "notFound": "There's no bus with this ID.",
+    "fleetGuessed": "Probable fleet number, worked out from the live feed's vehicle ID",
+    "fleetGuessedShort": "probable",
+    "confirmFleet": "I've checked the fleet number on the bus and it's right"
+  },
+  "add": {
+    "title": "Add a bus",
+    "help": "Fill in what you know. The plate or fleet number and the country are enough to start. New buses go live after review.",
+    "send": "Send for review",
+    "sent": "Sent. The bus goes live after review.",
+    "signIn": "Sign in to add a bus",
+    "required": "Choose a country and give a plate or a fleet number.",
+    "off": "Adding buses is turned off on this site."
+  },
+  "admin": {
+    "title": "Review queue",
+    "edits": "Edits",
+    "photos": "Photos",
+    "newBus": "New bus",
+    "approve": "Approve",
+    "reject": "Reject",
+    "empty": "Nothing to review.",
+    "forbidden": "Only reviewers can see this page."
+  },
+  "countries": {
+    "SE": "Sweden",
+    "GB": "United Kingdom",
+    "AU": "Australia",
+    "NZ": "New Zealand"
+  }
+}

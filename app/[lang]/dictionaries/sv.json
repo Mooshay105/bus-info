@@ -1,0 +1,123 @@
+{
+  "site": {
+    "name": "Bussinfo",
+    "description": "Slå upp vilken buss som helst i Sverige, Storbritannien, Australien eller Nya Zeeland med registreringsnummer eller vagnnummer.",
+    "switchLanguage": "In English",
+    "signIn": "Logga in",
+    "review": "Granskningskö",
+    "addBus": "Lägg till buss"
+  },
+  "home": {
+    "title": "Vilken buss är det där?",
+    "signLabel": "Regnummer, vagnnummer eller fordons-ID",
+    "placeholder": "SKRIV REGNR ELLER VAGNNR",
+    "search": "Hitta bussen",
+    "intro": "Skriv ett registreringsnummer, vagnnumret som står på bussen eller fordons-ID:t från ett realtidsflöde. Du får se hur gammal den är, var den är nu och bilder på den.",
+    "formatsTitle": "Så ser registreringsnummer ut",
+    "formats": [
+      [
+        "Sverige",
+        "ABC 12D"
+      ],
+      [
+        "Storbritannien",
+        "SN19 ABC"
+      ],
+      [
+        "Australien",
+        "2345 MO"
+      ],
+      [
+        "Nya Zeeland",
+        "HTZ123"
+      ]
+    ],
+    "coverage": "Positioner kommer från öppna realtidsflöden i Sverige, England, New South Wales, Queensland, Victoria, Auckland, Wellington och Christchurch."
+  },
+  "search": {
+    "title": "Sökresultat",
+    "results": "{n} bussar matchar ”{q}”",
+    "none": "Ingen buss matchar ”{q}”.",
+    "noneHelp": "Kontrollera regnumret eller vagnnumret. Om bussen inte finns hos oss än kan du lägga till den.",
+    "add": "Lägg till bussen",
+    "searchAgain": "Sök igen"
+  },
+  "bus": {
+    "unknownOperator": "Okänd operatör",
+    "ageYearsMonths": "{years} år och {months} månader gammal",
+    "ageYears": "{years} år gammal",
+    "ageAbout": "Ungefär {years} år gammal",
+    "ageNew": "Mindre än en månad gammal",
+    "ageUnknown": "Åldern är inte känd än",
+    "details": "Uppgifter",
+    "plate": "Regnummer",
+    "fleetNumber": "Vagnnummer",
+    "vehicleId": "Fordons-ID i flödet",
+    "operator": "Operatör",
+    "country": "Land",
+    "make": "Märke",
+    "model": "Modell",
+    "body": "Kaross",
+    "yearBuilt": "Byggd",
+    "firstRegistered": "Först registrerad",
+    "fuel": "Drivmedel",
+    "colour": "Färg",
+    "status": "Status",
+    "source": "Uppgifter från",
+    "sources": {
+      "curated": "Bussinfos bidragsgivare",
+      "dvla": "DVLA",
+      "feed": "Realtidsflöde"
+    },
+    "statuses": {
+      "active": "I trafik",
+      "withdrawn": "Avställd",
+      "unknown": "Okänd"
+    },
+    "location": "Var den är",
+    "lastSeen": "Sågs {time}",
+    "onRoute": "på linje {route}",
+    "noLocation": "Ingen position än. Bussen har inte synts i något realtidsflöde.",
+    "openMap": "Öppna i Google Maps",
+    "photos": "Bilder",
+    "noPhotos": "Inga bilder än. Ladda upp den första.",
+    "photoBy": "Foto: {author}",
+    "upload": "Ladda upp bilder",
+    "uploadDone": "Uppladdat. Bilderna visas här när de har granskats.",
+    "uploadSignIn": "Logga in för att ladda upp bilder",
+    "edit": "Föreslå en rättelse",
+    "editSignIn": "Logga in för att föreslå en rättelse",
+    "editHelp": "Ändra det som är fel eller saknas. Ändringarna syns efter granskning.",
+    "send": "Skicka för granskning",
+    "sent": "Skickat. Ändringarna syns efter granskning.",
+    "notFound": "Det finns ingen buss med det här ID:t.",
+    "fleetGuessed": "Troligt vagnnummer, uträknat från fordons-ID:t i realtidsflödet",
+    "fleetGuessedShort": "troligt",
+    "confirmFleet": "Jag har kollat vagnnumret på bussen och det stämmer"
+  },
+  "add": {
+    "title": "Lägg till en buss",
+    "help": "Fyll i det du vet. Regnummer eller vagnnummer och land räcker för att börja. Nya bussar syns efter granskning.",
+    "send": "Skicka för granskning",
+    "sent": "Skickat. Bussen syns efter granskning.",
+    "signIn": "Logga in för att lägga till en buss",
+    "required": "Välj land och ange regnummer eller vagnnummer.",
+    "off": "Det går inte att lägga till bussar på den här webbplatsen."
+  },
+  "admin": {
+    "title": "Granskningskö",
+    "edits": "Ändringar",
+    "photos": "Bilder",
+    "newBus": "Ny buss",
+    "approve": "Godkänn",
+    "reject": "Avvisa",
+    "empty": "Inget att granska.",
+    "forbidden": "Bara granskare kan se den här sidan."
+  },
+  "countries": {
+    "SE": "Sverige",
+    "GB": "Storbritannien",
+    "AU": "Australien",
+    "NZ": "Nya Zeeland"
+  }
+}

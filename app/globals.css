@@ -1,26 +1,100 @@
 @import "tailwindcss";
+@import "uploadthing/tw/v4";
+@source "../node_modules/@uploadthing/react/dist";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --housing: #26292d;
+  --housing-edge: #3a3f45;
+  --led: #ffb21a;
+  --led-off: #3b3423;
+  --street: #f2f4f3;
+  --ink: #1b1f24;
+  --stop: #1d5ba6;
+  --muted: #5f6b76;
+  --rule: #d5dadd;
+  --surface: #ffffff;
+  --danger: #b42318;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --housing: #2b2f34;
+    --housing-edge: #454b52;
+    --led-off: #3f3825;
+    --street: #191c1f;
+    --ink: #e6eaec;
+    --stop: #8bb8f0;
+    --muted: #9ba6ae;
+    --rule: #353b41;
+    --surface: #23272b;
+    --danger: #ff8a7a;
+    color-scheme: dark;
   }
 }
 
+@theme inline {
+  --color-housing: var(--housing);
+  --color-housing-edge: var(--housing-edge);
+  --color-led: var(--led);
+  --color-street: var(--street);
+  --color-ink: var(--ink);
+  --color-stop: var(--stop);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-surface: var(--surface);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-atkinson);
+  --font-sign: var(--font-doto);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--street);
+  color: var(--ink);
+}
+
+.sign {
+  background-color: var(--housing);
+  background-image: radial-gradient(circle, var(--led-off) 1.1px, transparent 1.5px);
+  background-size: 7px 7px;
+  border: 6px solid var(--housing-edge);
+  border-radius: 12px;
+  box-shadow: inset 0 2px 14px rgb(0 0 0 / 0.6);
+}
+
+.sign-text {
+  font-family: var(--font-doto);
+  font-weight: 800;
+  color: var(--led);
+  text-shadow: 0 0 6px rgb(255 178 26 / 0.55);
+  letter-spacing: 0.04em;
+}
+
+.sign-text::placeholder {
+  color: rgb(255 178 26 / 0.35);
+  text-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sign-scroll {
+    animation: sign-in 900ms steps(12, end) both;
+  }
+}
+
+@keyframes sign-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--stop);
+  outline-offset: 2px;
+}
+
+.sign :focus-visible {
+  outline-color: var(--led);
 }
