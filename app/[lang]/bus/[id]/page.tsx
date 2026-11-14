@@ -30,11 +30,12 @@ export default async function BusPage({ params }: PageProps<"/[lang]/bus/[id]">)
 }
 
 async function BusView({ lang, dict, params }: { lang: Locale; dict: Dictionary; params: Promise<{ id: string }> }) {
+  // Per-request data (DB, live location, Commons fetch): never run any of it during the build's prerender.
+  await connection();
   const id = Number((await params).id);
   const bus = Number.isInteger(id) ? await getBus(id) : undefined;
   if (!bus) notFound();
   const lastSeen = (await getLastSeen(bus.id)) ?? null;
-  await connection();
   const age = busAge(bus.first_registered, bus.year_built, new Date());
   const b = dict.bus;
 
