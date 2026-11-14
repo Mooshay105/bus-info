@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import Form from "next/form";
 import { fill, getDictionary, getLocale, type Dictionary, type Locale } from "../dictionaries";
 import { Plate } from "../plate";
@@ -28,6 +29,8 @@ async function Results({
   dict: Dictionary;
   searchParams: PageProps<"/[lang]/search">["searchParams"];
 }) {
+  // Search hits the database: render per request only.
+  await connection();
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
   const buses = q ? await searchBuses(q) : [];
