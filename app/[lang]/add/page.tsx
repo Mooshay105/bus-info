@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { authEnabled } from "@/lib/features";
 import { SignInButton } from "@clerk/nextjs";
@@ -24,6 +25,8 @@ export default async function AddPage({ searchParams }: PageProps<"/[lang]/add">
 }
 
 async function AddForm({ dict, searchParams }: { dict: Dictionary; searchParams: PageProps<"/[lang]/add">["searchParams"] }) {
+  // Depends on the signed-in user and the query string: render per request only.
+  await connection();
   if (!authEnabled()) return <p className="text-muted">{dict.add.off}</p>;
   const userId = await getUserId();
   if (!userId) {
