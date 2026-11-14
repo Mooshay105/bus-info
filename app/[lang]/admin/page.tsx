@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { getDictionary, getLocale, type Dictionary, type Locale } from "../dictionaries";
 import { reviewEdit, reviewPhoto } from "../actions";
@@ -35,6 +36,9 @@ function Decide({ id, action, dict }: { id: number; action: (formData: FormData)
 }
 
 async function Queue({ lang, dict }: { lang: Locale; dict: Dictionary }) {
+  // The review queue is per-request data: never run these queries during the build's prerender.
+  await connection();
+
   const userId = await getUserId();
   if (!isAdmin(userId)) return <p className="mt-6">{dict.admin.forbidden}</p>;
 
