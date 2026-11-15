@@ -1,5 +1,5 @@
 import "server-only";
-import { findBuses, saveDvlaBus, saveFeedBus } from "./buses";
+import { findBuses, getBuses, saveDvlaBus, saveFeedBus } from "./buses";
 import { searchFeeds } from "./feeds/vehicles";
 import { normalizeKey, plateCountries } from "./normalize";
 import { lookupDvla } from "./plates/dvla";
@@ -21,15 +21,14 @@ export async function searchBuses(input: string): Promise<Bus[]> {
   if (plateCountries(key).includes("GB")) {
     const dvla = await lookupDvla(key);
     if (dvla) {
-      await saveDvlaBus(dvla);
-      return findBuses(key);
+      return getBuses([await saveDvlaBus(dvla)]);
     }
   }
 
   const live = await searchFeeds(key);
   if (live.length > 0) {
-    await Promise.all(live.map((vp) => saveFeedBus(vp)));
-    return findBuses(key);
+    const ids = await Promise.all(live.map((vp) => saveFeedBus(vp)));
+    return getBuses([...new Set(ids.filter((id): id is number => id !== null))]);
   }
   return [];
 }

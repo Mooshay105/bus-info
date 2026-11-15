@@ -4,7 +4,7 @@ import { parseCsv } from "../lib/csv";
 import { downloadFeed } from "../lib/feeds/download";
 import { FEEDS, feedById, fleetNumber, guessFleetFromId, vehicleKey, type FeedConfig } from "../lib/feeds/registry";
 import { normalizeKey } from "../lib/normalize";
-import { COUNTRIES, EDITABLE_FIELDS, type VehiclePosition } from "../lib/types";
+import { COUNTRIES, EDITABLE_FIELDS, STATUSES, type VehiclePosition } from "../lib/types";
 
 const USAGE = `Usage: bun run sync [feed id ...] [--changes <file>|none] [--apply] [--deploy]
 
@@ -62,7 +62,6 @@ const FIELDS = [
 ] as const satisfies readonly (keyof Row)[];
 
 const MATCH_COLUMNS = ["bus_id", "feed_id", "match_fleet", "match_plate", "match_vehicle_id"];
-const STATUSES = ["active", "withdrawn", "unknown"];
 
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {

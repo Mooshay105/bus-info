@@ -7,7 +7,7 @@ import { applyChanges, getBus } from "@/lib/buses";
 import { isAdmin } from "@/lib/admin";
 import { getAuthorName, getUserId } from "@/lib/auth";
 import { notifyAdmin } from "@/lib/notify";
-import { COUNTRIES, EDITABLE_FIELDS, type BusChanges, type Country } from "@/lib/types";
+import { COUNTRIES, EDITABLE_FIELDS, STATUSES, type BusChanges, type Country } from "@/lib/types";
 
 export type FormState = { ok: boolean; error?: string };
 
@@ -21,8 +21,10 @@ function readChanges(formData: FormData): BusChanges {
     const value = formData.get(field);
     if (typeof value === "string") changes[field] = value.trim().slice(0, 120);
   }
-  if (changes.country && !COUNTRIES.includes(changes.country as Country)) delete changes.country;
+  if (changes.country !== undefined && !COUNTRIES.includes(changes.country as Country)) delete changes.country;
+  if (changes.status !== undefined && !STATUSES.includes(changes.status)) delete changes.status;
   if (changes.year_built && !/^\d{4}$/.test(changes.year_built)) delete changes.year_built;
+  if (changes.first_registered && !/^\d{4}-\d{2}(-\d{2})?$/.test(changes.first_registered)) delete changes.first_registered;
   return changes;
 }
 

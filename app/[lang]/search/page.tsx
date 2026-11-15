@@ -47,7 +47,7 @@ async function Results({
         />
         <button className="rounded-md bg-led px-4 py-2 font-bold text-housing">{dict.home.search}</button>
       </Form>
-      {buses.length === 0 ? (
+      {!q ? null : buses.length === 0 ? (
         <div className="mt-10 max-w-[60ch]">
           <h1 className="text-2xl font-bold">{fill(dict.search.none, { q })}</h1>
           <p className="mt-3 text-lg">{dict.search.noneHelp}</p>
