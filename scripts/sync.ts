@@ -378,7 +378,8 @@ await inBatches(
   [...positions].map(([row, vp]) => ({
     sql: `INSERT INTO last_seen (bus_id, lat, lon, bearing, speed, route_id, seen_at) VALUES (?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT (bus_id) DO UPDATE SET lat = excluded.lat, lon = excluded.lon, bearing = excluded.bearing,
-            speed = excluded.speed, route_id = excluded.route_id, seen_at = excluded.seen_at`,
+            speed = excluded.speed, route_id = excluded.route_id, seen_at = excluded.seen_at
+          WHERE excluded.seen_at >= last_seen.seen_at`,
     args: [row.id, vp.lat, vp.lon, vp.bearing, vp.speed, vp.routeId, vp.timestamp ?? Math.floor(Date.now() / 1000)],
   })),
 );
