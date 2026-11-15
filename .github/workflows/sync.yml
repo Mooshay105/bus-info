@@ -25,6 +25,7 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    environment: Pull Buses Job
     timeout-minutes: 20
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
