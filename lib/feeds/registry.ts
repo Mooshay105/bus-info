@@ -22,6 +22,11 @@ export interface FeedConfig {
   guessFleet?: boolean;
   /** Vehicle id groups (digits 8–11) whose last digits are not fleet numbers, so no guess is made. */
   noGuessGroups?: string[];
+  /**
+   * Tidies or drops a position before it is used, for feeds that mix in other vehicles or put data in the wrong field.
+   * Returns null to drop the position.
+   */
+  adjust?: (vp: VehiclePosition) => VehiclePosition | null;
   /** Builds the request URL and headers from the API key. */
   request: (key: string) => { url: string; headers?: Record<string, string> };
 }
@@ -47,6 +52,15 @@ function sweden(operator: string, name: string, noGuessGroups: string[] = []): F
   };
 }
 
+/**
+ * Builds an adjust function for feeds that put the number plate in the label, moving plate-shaped labels to the plate.
+ * @param plate Pattern a label must match to count as a plate.
+ * @returns The adjust function.
+ */
+function labelAsPlate(plate: RegExp): (vp: VehiclePosition) => VehiclePosition {
+  return (vp) => (vp.label && plate.test(vp.label) ? { ...vp, plate: vp.plate ?? vp.label, label: null } : vp);
+}
+
 /** Every realtime feed the site knows about. Feeds whose key is missing are skipped. */
 export const FEEDS: FeedConfig[] = [
   sweden("sl", "SL (Stockholm)", ["0025", "0027"]),
@@ -64,8 +78,9 @@ export const FEEDS: FeedConfig[] = [
     name: "Bus Open Data Service (England)",
     country: "GB",
     keyEnv: "BODS_KEY",
+    adjust: labelAsPlate(/^[A-Z]{2}\d{2}[A-Z]{3}$/),
     request: (key) => ({
-      url: `https://data.bus-data.dft.gov.uk/api/v1/gtfsrtdatafeed/?api_key=${encodeURIComponent(key)}`,
+      url: `https://data.bus-data.dft.gov.uk/api/v1/gtfsrtdatafeed/?boundingBox=-8.7,49.8,1.8,60.9&api_key=${encodeURIComponent(key)}`,
     }),
   },
   {
@@ -102,6 +117,7 @@ export const FEEDS: FeedConfig[] = [
     name: "Auckland Transport",
     country: "NZ",
     keyEnv: "AT_KEY",
+    adjust: (vp) => (/^\d{5}$/.test(vp.vehicleId ?? "") && !vp.label?.startsWith("AMP") ? vp : null),
     request: (key) => ({
       url: "https://api.at.govt.nz/realtime/legacy/vehiclelocations",
       headers: { "Ocp-Apim-Subscription-Key": key, Accept: "application/json" },
@@ -112,6 +128,7 @@ export const FEEDS: FeedConfig[] = [
     name: "Metlink (Wellington)",
     country: "NZ",
     keyEnv: "METLINK_KEY",
+    adjust: (vp) => (/^\d{9}$/.test(vp.vehicleId ?? "") ? null : vp),
     request: (key) => ({
       url: "https://api.opendata.metlink.org.nz/v1/gtfs-rt/vehiclepositions",
       headers: { "x-api-key": key, Accept: "application/json" },
@@ -122,6 +139,7 @@ export const FEEDS: FeedConfig[] = [
     name: "Metro (Christchurch)",
     country: "NZ",
     keyEnv: "METRO_CHC_KEY",
+    adjust: labelAsPlate(/^[A-Z]{1,3}\d{1,4}$/),
     request: (key) => ({
       url: "https://apis.metroinfo.co.nz/rti/gtfsrt/v1/vehicle-positions.pb",
       headers: { "Ocp-Apim-Subscription-Key": key },

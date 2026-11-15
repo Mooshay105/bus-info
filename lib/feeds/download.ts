@@ -24,7 +24,8 @@ export async function downloadFeed(feed: FeedConfig, timeoutMs = 10_000): Promis
     const positions = (res.headers.get("content-type") ?? "").includes("json")
       ? vehiclePositionsFromJson(await res.json(), feed.id)
       : decodeVehiclePositions(new Uint8Array(await res.arrayBuffer()), feed.id);
-    return { ok: true, positions };
+    const { adjust } = feed;
+    return { ok: true, positions: adjust ? positions.flatMap((vp) => adjust(vp) ?? []) : positions };
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : String(error) };
   }
