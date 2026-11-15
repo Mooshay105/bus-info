@@ -215,6 +215,10 @@ if (changesArg !== "none") {
     for (const { line, values } of records) {
       const where = `line ${line}`;
       const busId = values.bus_id ? Number(values.bus_id) : null;
+      if (busId !== null && !(Number.isInteger(busId) && busId > 0)) {
+        warnings.push(`${where}: invalid bus_id "${values.bus_id}", use the number from the bus page address`);
+        continue;
+      }
       if (!busId && !values.match_fleet && !values.match_plate && !values.match_vehicle_id) {
         warnings.push(`${where}: needs bus_id or one of match_fleet, match_plate, match_vehicle_id`);
         continue;

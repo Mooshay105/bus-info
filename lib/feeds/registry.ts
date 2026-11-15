@@ -61,6 +61,15 @@ function labelAsPlate(plate: RegExp): (vp: VehiclePosition) => VehiclePosition {
   return (vp) => (vp.label && plate.test(vp.label) ? { ...vp, plate: vp.plate ?? vp.label, label: null } : vp);
 }
 
+/**
+ * Builds an adjust function for feeds whose vehicle id is the number plate, copying plate-shaped ids into the plate.
+ * @param plate Pattern a vehicle id must match to count as a plate.
+ * @returns The adjust function.
+ */
+function idAsPlate(plate: RegExp): (vp: VehiclePosition) => VehiclePosition {
+  return (vp) => (!vp.plate && vp.vehicleId && plate.test(vp.vehicleId) ? { ...vp, plate: vp.vehicleId } : vp);
+}
+
 /** Every realtime feed the site knows about. Feeds whose key is missing are skipped. */
 export const FEEDS: FeedConfig[] = [
   sweden("sl", "SL (Stockholm)", ["0025", "0027"]),
@@ -106,6 +115,7 @@ export const FEEDS: FeedConfig[] = [
     name: "PTV bus (Victoria)",
     country: "AU",
     keyEnv: "PTV_KEY",
+    adjust: idAsPlate(/^(?:[A-Z]{2}\d{2}[A-Z]{2}|\d{4}[A-Z]{2})$/),
     request: (key) => ({
       url: "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/bus/vehicle-positions",
       headers: { KeyId: key },

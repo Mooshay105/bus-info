@@ -2,7 +2,7 @@ import "server-only";
 import { findBuses, getBuses, saveDvlaBus, saveFeedBus } from "./buses";
 import { searchFeeds } from "./feeds/vehicles";
 import { normalizeKey, plateCountries } from "./normalize";
-import { lookupDvla } from "./plates/dvla";
+import { isBus, lookupDvla } from "./plates/dvla";
 import type { Bus } from "./types";
 
 /**
@@ -20,7 +20,7 @@ export async function searchBuses(input: string): Promise<Bus[]> {
 
   if (plateCountries(key).includes("GB")) {
     const dvla = await lookupDvla(key);
-    if (dvla) {
+    if (dvla && isBus(dvla)) {
       return getBuses([await saveDvlaBus(dvla)]);
     }
   }
