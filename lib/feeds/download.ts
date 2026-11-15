@@ -10,12 +10,13 @@ export type FeedDownload = { ok: true; positions: VehiclePosition[] } | { ok: fa
  * Downloads a feed and decodes every vehicle position in it, reporting why when it can't.
  * @param feed The feed to read.
  * @param timeoutMs How long to wait for the response.
+ * @param vehicleId Feed vehicle id to ask for on its own, for feeds that can filter by vehicle.
  * @returns The positions, or a reason such as a missing key or an HTTP error.
  */
-export async function downloadFeed(feed: FeedConfig, timeoutMs = 10_000): Promise<FeedDownload> {
+export async function downloadFeed(feed: FeedConfig, timeoutMs = 10_000, vehicleId?: string): Promise<FeedDownload> {
   const key = feed.keyEnv ? process.env[feed.keyEnv] : "";
   if (feed.keyEnv && !key) return { ok: false, reason: `${feed.keyEnv} is not set` };
-  const { url, headers } = feed.request(key ?? "");
+  const { url, headers } = feed.request(key ?? "", vehicleId);
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "buss-info/0.1", ...headers },

@@ -4,7 +4,7 @@ import { parseCsv } from "../lib/csv";
 import { downloadFeed } from "../lib/feeds/download";
 import { FEEDS, feedById, fleetNumber, guessFleetFromId, vehicleKey, type FeedConfig } from "../lib/feeds/registry";
 import { normalizeKey } from "../lib/normalize";
-import { COUNTRIES, EDITABLE_FIELDS, STATUSES, type VehiclePosition } from "../lib/types";
+import { COUNTRIES, EDITABLE_FIELDS, FIRST_REGISTERED_PATTERN, STATUSES, type VehiclePosition } from "../lib/types";
 
 const USAGE = `Usage: bun run sync [feed id ...] [--changes <file>|none] [--apply] [--deploy]
 
@@ -251,7 +251,7 @@ if (changesArg !== "none") {
         if (field === "country" && !COUNTRIES.includes(value as never)) bad = true;
         if (field === "year_built" && value !== null && !/^\d{4}$/.test(value)) bad = true;
         if (field === "status" && !STATUSES.includes(value ?? "")) bad = true;
-        if (field === "first_registered" && value !== null && !/^\d{4}-\d{2}(-\d{2})?$/.test(value)) bad = true;
+        if (field === "first_registered" && value !== null && !new RegExp(`^${FIRST_REGISTERED_PATTERN}$`).test(value)) bad = true;
         if (bad) {
           warnings.push(`${where}: invalid ${field} "${raw}"`);
           break;

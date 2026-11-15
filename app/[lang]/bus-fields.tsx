@@ -1,5 +1,5 @@
 import type { Dictionary } from "./dictionaries";
-import { COUNTRIES, type Bus } from "@/lib/types";
+import { COUNTRIES, FIRST_REGISTERED_PATTERN, type Bus } from "@/lib/types";
 
 /** Props for the shared set of bus form inputs. */
 interface BusFieldsProps {
@@ -19,7 +19,7 @@ export function BusFields({ dict, bus = {} }: BusFieldsProps) {
     ["model", b.model],
     ["body", b.body],
     ["year_built", b.yearBuilt, "\\d{4}"],
-    ["first_registered", b.firstRegistered, "\\d{4}-\\d{2}(-\\d{2})?"],
+    ["first_registered", b.firstRegistered, FIRST_REGISTERED_PATTERN],
     ["fuel", b.fuel],
     ["colour", b.colour],
     ["gtfs_vehicle_id", b.vehicleId],

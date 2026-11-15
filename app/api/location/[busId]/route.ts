@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/location/[busId
     const feed = feedById(bus.feed_id);
     const ids = bus.gtfs_vehicle_id ? [bus.gtfs_vehicle_id] : [bus.fleet_number, bus.plate];
     const keys = [...new Set(ids.filter((v): v is string => Boolean(v)).map(normalizeKey))].sort();
-    const found = await findVehiclesInFeed(bus.feed_id, keys);
+    const found = await findVehiclesInFeed(bus.feed_id, keys, bus.gtfs_vehicle_id ?? undefined);
     const own = bus.gtfs_vehicle_id
       ? found.filter((vp) => normalizeKey(vehicleKey(feed, vp)) === keys[0])
       : found;
