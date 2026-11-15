@@ -30,13 +30,23 @@ function withoutQuery(url: string): string {
   return url.split("?")[0];
 }
 
+/** Named HTML entities that appear in Commons metadata, and the characters they stand for. */
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
 /**
- * Strips HTML tags from a Commons metadata value.
+ * Strips HTML tags from a Commons metadata value and decodes its entities, such as "&amp;" in an author's name.
  * @param html Value that may contain markup.
  * @returns Plain text.
  */
 function plain(html: string | undefined): string {
-  return (html ?? "").replace(/<[^>]*>/g, "").trim();
+  return (html ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(?:#(\d+)|#x([\da-f]+)|(\w+));/gi, (entity, dec?: string, hex?: string, name?: string) => {
+      const code = dec ? Number(dec) : hex ? parseInt(hex, 16) : NaN;
+      if (Number.isInteger(code)) return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+      return ENTITIES[name!.toLowerCase()] ?? entity;
+    })
+    .trim();
 }
 
 /**

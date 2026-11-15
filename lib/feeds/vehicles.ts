@@ -51,16 +51,6 @@ export async function findVehiclesInFeed(feedId: string, keys: string[]): Promis
 }
 
 /**
- * Finds one vehicle in a feed.
- * @param feedId Feed to search.
- * @param keys Normalised identifiers (vehicle id, fleet number, plate) to match.
- * @returns The newest matching position, or null.
- */
-export async function findVehicleInFeed(feedId: string, keys: string[]): Promise<VehiclePosition | null> {
-  return (await findVehiclesInFeed(feedId, keys))[0] ?? null;
-}
-
-/**
  * Searches every enabled feed for vehicles matching one identifier.
  * @param key Normalised identifier typed by the user.
  * @returns Every matching vehicle across feeds, at most MAX_LIVE_RESULTS.
