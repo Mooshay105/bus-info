@@ -27,8 +27,11 @@ export interface FeedConfig {
    * Returns null to drop the position.
    */
   adjust?: (vp: VehiclePosition) => VehiclePosition | null;
-  /** Builds the request URL and headers from the API key. */
-  request: (key: string) => { url: string; headers?: Record<string, string> };
+  /**
+   * Builds the request URL and headers from the API key.
+   * When a vehicle id is given, a feed that can filter by vehicle asks for just that vehicle; others ignore it.
+   */
+  request: (key: string, vehicleId?: string) => { url: string; headers?: Record<string, string> };
 }
 
 /**
@@ -88,9 +91,14 @@ export const FEEDS: FeedConfig[] = [
     country: "GB",
     keyEnv: "BODS_KEY",
     adjust: labelAsPlate(/^[A-Z]{2}\d{2}[ _]?[A-Z]{3}$/),
-    request: (key) => ({
-      url: `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=-8.7,49.8,1.8,60.9&api_key=${encodeURIComponent(key)}`,
-    }),
+    request: (key, vehicleId) => {
+      const colon = vehicleId?.indexOf(":") ?? -1;
+      const filter =
+        vehicleId && colon > 0
+          ? `operatorRef=${encodeURIComponent(vehicleId.slice(0, colon))}&vehicleRef=${encodeURIComponent(vehicleId.slice(colon + 1))}`
+          : "boundingBox=-8.7,49.8,1.8,60.9";
+      return { url: `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?${filter}&api_key=${encodeURIComponent(key)}` };
+    },
   },
   {
     id: "au-tfnsw",

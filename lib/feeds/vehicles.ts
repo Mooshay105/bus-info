@@ -8,10 +8,11 @@ import { enabledFeeds, feedById, vehicleKey, type FeedConfig } from "./registry"
 /**
  * Downloads a feed and decodes every vehicle position in it.
  * @param feed The feed to read.
+ * @param vehicleId Feed vehicle id to ask for on its own, for feeds that can filter by vehicle.
  * @returns All vehicle positions, or an empty list if the feed has no key or fails.
  */
-export async function fetchFeed(feed: FeedConfig): Promise<VehiclePosition[]> {
-  const result = await downloadFeed(feed);
+export async function fetchFeed(feed: FeedConfig, vehicleId?: string): Promise<VehiclePosition[]> {
+  const result = await downloadFeed(feed, undefined, vehicleId);
   return result.ok ? result.positions : [];
 }
 
@@ -33,15 +34,16 @@ const MAX_LIVE_RESULTS = 50;
  * Fleet numbers repeat between operators in one feed, so a key can match several buses.
  * @param feedId Feed to search.
  * @param keys Normalised identifiers (vehicle id, fleet number, plate) to match.
+ * @param vehicleId The bus's own feed vehicle id, if known, so feeds that can filter by vehicle send only that one.
  * @returns The newest position of each matching vehicle, newest first.
  */
-export async function findVehiclesInFeed(feedId: string, keys: string[]): Promise<VehiclePosition[]> {
+export async function findVehiclesInFeed(feedId: string, keys: string[], vehicleId?: string): Promise<VehiclePosition[]> {
   "use cache";
   cacheLife({ stale: 20, revalidate: 20, expire: 60 });
   const feed = feedById(feedId);
   if (!feed || keys.length === 0) return [];
   const newest = new Map<string, VehiclePosition>();
-  for (const vp of await fetchFeed(feed)) {
+  for (const vp of await fetchFeed(feed, vehicleId)) {
     if (!matches(vp, keys)) continue;
     const id = vehicleKey(feed, vp) ?? "";
     const seen = newest.get(id);

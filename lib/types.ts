@@ -4,6 +4,9 @@ export type Country = "SE" | "GB" | "AU" | "NZ";
 /** Every supported country code, in display order. */
 export const COUNTRIES: Country[] = ["SE", "GB", "AU", "NZ"];
 
+/** Shape of a first registration date: "YYYY-MM" or "YYYY-MM-DD" with a real month and day. Written for an HTML pattern attribute; wrap it in ^ and $ to use it as a RegExp. */
+export const FIRST_REGISTERED_PATTERN = "\\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\\d|3[01]))?";
+
 /** Every value the status of a bus can have. */
 export const STATUSES = ["active", "withdrawn", "unknown"];
 
