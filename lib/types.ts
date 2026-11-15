@@ -4,6 +4,9 @@ export type Country = "SE" | "GB" | "AU" | "NZ";
 /** Every supported country code, in display order. */
 export const COUNTRIES: Country[] = ["SE", "GB", "AU", "NZ"];
 
+/** Every value the status of a bus can have. */
+export const STATUSES = ["active", "withdrawn", "unknown"];
+
 /** A bus row joined with its operator name. */
 export interface Bus {
   /** Internal id used in URLs. */

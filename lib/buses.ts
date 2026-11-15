@@ -35,6 +35,16 @@ export function findBuses(key: string): Promise<Bus[]> {
 }
 
 /**
+ * Loads several buses by id.
+ * @param ids Internal bus ids.
+ * @returns The buses that exist, ordered by id.
+ */
+export function getBuses(ids: number[]): Promise<Bus[]> {
+  if (ids.length === 0) return Promise.resolve([]);
+  return query<Bus>({ sql: `${BUS_SELECT} WHERE b.id IN (${ids.map(() => "?").join(", ")}) ORDER BY b.id`, args: ids });
+}
+
+/**
  * Returns the operator id for a name and country, creating the operator when it is new.
  * @param name Operator name.
  * @param country Country code.
@@ -82,11 +92,12 @@ export async function saveDvlaBus(v: DvlaVehicle): Promise<number> {
 /**
  * Saves a bus first seen in a realtime feed, or returns the existing one for that feed and vehicle id.
  * @param vp The vehicle position that identified the bus.
- * @returns The bus id.
+ * @returns The bus id, or null when the feed gives the vehicle no identifier that stays the same.
  */
-export async function saveFeedBus(vp: VehiclePosition): Promise<number> {
+export async function saveFeedBus(vp: VehiclePosition): Promise<number | null> {
   const feed = feedById(vp.feedId);
-  const vehicleId = vehicleKey(feed, vp) ?? "";
+  const vehicleId = vehicleKey(feed, vp);
+  if (!vehicleId) return null;
   const fleet = fleetNumber(feed, vp);
   const opId = feed ? await operatorId(feed.name, feed.country, feed.id) : null;
   const result = await (await readyDb()).execute({
@@ -159,25 +170,30 @@ export async function applyChanges(busId: number | null, changes: BusChanges): P
   }
   if ("gtfs_vehicle_id" in values) values.gtfs_norm = values.gtfs_vehicle_id ? normalizeKey(String(values.gtfs_vehicle_id)) : null;
 
-  let id = busId;
-  if (id === null) {
-    const result = await (await readyDb()).execute({
-      sql: "INSERT INTO buses (country, source) VALUES (?, 'curated') RETURNING id",
-      args: [String(values.country ?? "SE")],
-    });
-    id = Number(result.rows[0].id);
+  if (operator_name !== undefined) {
+    if (operator_name.trim()) {
+      const bus = busId === null ? undefined : await getBus(busId);
+      const country = (values.country ?? bus?.country ?? "SE") as Country;
+      values.operator_id = await operatorId(operator_name, country, (values.feed_id as string | null) ?? bus?.feed_id ?? null);
+    } else {
+      values.operator_id = null;
+    }
   }
-  if (operator_name?.trim()) {
-    const bus = await getBus(id);
-    const country = (values.country ?? bus?.country ?? "SE") as Country;
-    values.operator_id = await operatorId(operator_name, country, (values.feed_id as string | null) ?? bus?.feed_id ?? null);
+  if (busId === null) {
+    const row = { ...values, country: values.country ?? "SE", source: "curated" };
+    const names = Object.keys(row) as (keyof typeof row)[];
+    const result = await (await readyDb()).execute({
+      sql: `INSERT INTO buses (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")}) RETURNING id`,
+      args: names.map((n) => row[n]),
+    });
+    return Number(result.rows[0].id);
   }
   const columns = Object.keys(values);
   if (columns.length > 0) {
     await (await readyDb()).execute({
       sql: `UPDATE buses SET ${columns.map((c) => `${c} = ?`).join(", ")}, updated_at = datetime('now') WHERE id = ?`,
-      args: [...columns.map((c) => values[c]), id],
+      args: [...columns.map((c) => values[c]), busId],
     });
   }
-  return id;
+  return busId;
 }

@@ -40,15 +40,14 @@ function plain(html: string | undefined): string {
 }
 
 /**
- * Searches Wikimedia Commons for photos of a bus, cached for a day.
- * @param terms Search phrases, e.g. the plate and "fleet number + operator"; each is quoted and OR-ed.
+ * Runs one Wikimedia Commons image search, cached for a day.
+ * Throws when the request fails, so a failure is not cached as "no photos".
+ * @param phrases Quoted search phrases, OR-ed together.
  * @returns Up to 8 photos with attribution.
  */
-export async function commonsPhotos(terms: string[]): Promise<Photo[]> {
+async function searchCommons(phrases: string[]): Promise<Photo[]> {
   "use cache";
   cacheLife("days");
-  const phrases = terms.filter((t) => t.trim().length >= 3).map((t) => `"${t.replace(/"/g, "")}"`);
-  if (phrases.length === 0) return [];
   const params = new URLSearchParams({
     action: "query",
     format: "json",
@@ -60,27 +59,38 @@ export async function commonsPhotos(terms: string[]): Promise<Photo[]> {
     iiprop: "url|mime|extmetadata",
     iiurlwidth: "800",
   });
+  const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+    headers: { "User-Agent": "buss-info/0.1 (bus lookup site)" },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) throw new Error(`Commons answered HTTP ${res.status}`);
+  const body = (await res.json()) as CommonsResponse;
+  return Object.values(body.query?.pages ?? {}).flatMap((page) => {
+    const info = page.imageinfo?.[0];
+    if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime ?? "")) return [];
+    return [
+      {
+        url: withoutQuery(info.url),
+        thumb: withoutQuery(info.thumburl ?? info.url),
+        sourceUrl: info.descriptionurl,
+        author: plain(info.extmetadata?.Artist?.value) || "Wikimedia Commons",
+        licence: plain(info.extmetadata?.LicenseShortName?.value) || null,
+        origin: "commons" as const,
+      },
+    ];
+  });
+}
+
+/**
+ * Searches Wikimedia Commons for photos of a bus.
+ * @param terms Search phrases, e.g. the plate and "fleet number + operator"; each is quoted and OR-ed.
+ * @returns Up to 8 photos with attribution; empty when nothing matches or the search fails.
+ */
+export async function commonsPhotos(terms: string[]): Promise<Photo[]> {
+  const phrases = terms.filter((t) => t.trim().length >= 3).map((t) => `"${t.replace(/"/g, "")}"`);
+  if (phrases.length === 0) return [];
   try {
-    const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
-      headers: { "User-Agent": "buss-info/0.1 (bus lookup site)" },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!res.ok) return [];
-    const body = (await res.json()) as CommonsResponse;
-    return Object.values(body.query?.pages ?? {}).flatMap((page) => {
-      const info = page.imageinfo?.[0];
-      if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime ?? "")) return [];
-      return [
-        {
-          url: withoutQuery(info.url),
-          thumb: withoutQuery(info.thumburl ?? info.url),
-          sourceUrl: info.descriptionurl,
-          author: plain(info.extmetadata?.Artist?.value) || "Wikimedia Commons",
-          licence: plain(info.extmetadata?.LicenseShortName?.value) || null,
-          origin: "commons" as const,
-        },
-      ];
-    });
+    return await searchCommons(phrases);
   } catch {
     return [];
   }

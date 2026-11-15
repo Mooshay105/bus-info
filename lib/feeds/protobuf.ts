@@ -159,7 +159,7 @@ function jsonText(value: string | number | null | undefined): string | null {
 }
 
 /**
- * Turns a JSON bearing or speed into a number, since some feeds send these as strings.
+ * Turns a JSON bearing, speed or timestamp into a number, since some feeds send these as strings.
  * @param value Raw value from the feed.
  * @returns The number, or null when it is missing or not a number.
  */
@@ -173,7 +173,7 @@ function jsonNumber(value: string | number | null | undefined): number | null {
  * Reads vehicle positions from a GTFS-Realtime feed encoded as JSON, as Auckland Transport and Metlink serve it.
  * @param body Parsed JSON body; either a FeedMessage or one wrapped in a "response" object.
  * @param feedId Id of the feed, copied onto each result.
- * @returns Vehicle positions that have both a latitude and a longitude.
+ * @returns Vehicle positions that have both a latitude and a longitude, leaving out the 0,0 some feeds send for "unknown".
  */
 export function vehiclePositionsFromJson(body: unknown, feedId: string): VehiclePosition[] {
   const root = body as { entity?: JsonEntity[]; response?: { entity?: JsonEntity[] } };
@@ -183,7 +183,7 @@ export function vehiclePositionsFromJson(body: unknown, feedId: string): Vehicle
     const v = e.vehicle;
     const lat = v?.position?.latitude;
     const lon = v?.position?.longitude;
-    if (!v || typeof lat !== "number" || typeof lon !== "number") continue;
+    if (!v || typeof lat !== "number" || typeof lon !== "number" || (lat === 0 && lon === 0)) continue;
     out.push({
       feedId,
       vehicleId: jsonText(v.vehicle?.id),
@@ -194,7 +194,7 @@ export function vehiclePositionsFromJson(body: unknown, feedId: string): Vehicle
       bearing: jsonNumber(v.position?.bearing),
       speed: jsonNumber(v.position?.speed),
       routeId: jsonText(v.trip?.route_id ?? v.trip?.routeId),
-      timestamp: v.timestamp == null ? null : Number(v.timestamp),
+      timestamp: jsonNumber(v.timestamp),
     });
   }
   return out;

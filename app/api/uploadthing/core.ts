@@ -1,6 +1,7 @@
 import { getAuthorName, getUserId } from "@/lib/auth";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+import { getBus } from "@/lib/buses";
 import { readyDb } from "@/lib/db";
 import { notifyAdmin } from "@/lib/notify";
 
@@ -27,6 +28,7 @@ export const fileRouter = {
       const userId = await getUserId();
       if (!userId) throw new UploadThingError("Sign in to upload photos");
       if (!input) throw new UploadThingError("Missing bus id");
+      if (!(await getBus(input.busId))) throw new UploadThingError("Bus not found");
       return { userId, busId: input.busId, author: await getAuthorName() };
     })
     .onUploadComplete(async ({ metadata, file }) => {
