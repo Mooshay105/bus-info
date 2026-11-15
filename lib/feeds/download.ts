@@ -1,6 +1,7 @@
 import type { VehiclePosition } from "../types";
 import { decodeVehiclePositions, vehiclePositionsFromJson } from "./protobuf";
 import type { FeedConfig } from "./registry";
+import { vehiclePositionsFromSiri } from "./siri";
 
 /** Result of downloading one feed: its positions, or why it was skipped. */
 export type FeedDownload = { ok: true; positions: VehiclePosition[] } | { ok: false; reason: string };
@@ -21,9 +22,12 @@ export async function downloadFeed(feed: FeedConfig, timeoutMs = 10_000): Promis
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` };
-    const positions = (res.headers.get("content-type") ?? "").includes("json")
+    const type = res.headers.get("content-type") ?? "";
+    const positions = type.includes("json")
       ? vehiclePositionsFromJson(await res.json(), feed.id)
-      : decodeVehiclePositions(new Uint8Array(await res.arrayBuffer()), feed.id);
+      : type.includes("xml")
+        ? vehiclePositionsFromSiri(await res.text(), feed.id)
+        : decodeVehiclePositions(new Uint8Array(await res.arrayBuffer()), feed.id);
     const { adjust } = feed;
     return { ok: true, positions: adjust ? positions.flatMap((vp) => adjust(vp) ?? []) : positions };
   } catch (error) {

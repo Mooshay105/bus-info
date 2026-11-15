@@ -78,9 +78,9 @@ export const FEEDS: FeedConfig[] = [
     name: "Bus Open Data Service (England)",
     country: "GB",
     keyEnv: "BODS_KEY",
-    adjust: labelAsPlate(/^[A-Z]{2}\d{2}[A-Z]{3}$/),
+    adjust: labelAsPlate(/^[A-Z]{2}\d{2}[ _]?[A-Z]{3}$/),
     request: (key) => ({
-      url: `https://data.bus-data.dft.gov.uk/api/v1/gtfsrtdatafeed/?boundingBox=-8.7,49.8,1.8,60.9&api_key=${encodeURIComponent(key)}`,
+      url: `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?boundingBox=-8.7,49.8,1.8,60.9&api_key=${encodeURIComponent(key)}`,
     }),
   },
   {
@@ -99,7 +99,6 @@ export const FEEDS: FeedConfig[] = [
     name: "Translink (South East Queensland)",
     country: "AU",
     keyEnv: null,
-    identity: ["label", "vehicleId"],
     request: () => ({ url: "https://gtfsrt.api.translink.com.au/api/realtime/SEQ/VehiclePositions/Bus" }),
   },
   {
