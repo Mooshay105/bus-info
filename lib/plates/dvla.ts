@@ -19,6 +19,8 @@ export interface DvlaVehicle {
   taxStatus?: string;
   /** "Valid", "Not valid" and so on. */
   motStatus?: string;
+  /** EU vehicle category, e.g. "M1" for cars and "M3" for buses. Missing for many older vehicles. */
+  typeApproval?: string;
 }
 
 /**
@@ -53,4 +55,13 @@ export async function lookupDvla(plate: string): Promise<DvlaVehicle | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Checks whether a DVLA vehicle could be a bus or coach. The DVLA knows every UK vehicle, so a plate search can find cars and vans too.
+ * @param v DVLA response.
+ * @returns False when the vehicle's type approval says it is not a bus (anything but M2 or M3); true otherwise, including when the type is unknown.
+ */
+export function isBus(v: DvlaVehicle): boolean {
+  return !v.typeApproval || /^M[23]/i.test(v.typeApproval);
 }

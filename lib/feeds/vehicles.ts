@@ -3,7 +3,7 @@ import { cacheLife } from "next/cache";
 import { normalizeKey } from "../normalize";
 import type { VehiclePosition } from "../types";
 import { downloadFeed } from "./download";
-import { enabledFeeds, feedById, type FeedConfig } from "./registry";
+import { enabledFeeds, feedById, vehicleKey, type FeedConfig } from "./registry";
 
 /**
  * Downloads a feed and decodes every vehicle position in it.
@@ -25,28 +25,47 @@ function matches(vp: VehiclePosition, keys: string[]): boolean {
   return [vp.vehicleId, vp.label, vp.plate].some((value) => value != null && keys.includes(normalizeKey(value)));
 }
 
+/** Most live matches one search returns, the same cap as a database search. */
+const MAX_LIVE_RESULTS = 50;
+
 /**
- * Finds one vehicle in a feed, cached for about 20 seconds per feed and key set.
+ * Finds every vehicle in a feed that matches, cached for about 20 seconds per feed and key set.
+ * Fleet numbers repeat between operators in one feed, so a key can match several buses.
+ * @param feedId Feed to search.
+ * @param keys Normalised identifiers (vehicle id, fleet number, plate) to match.
+ * @returns The newest position of each matching vehicle, newest first.
+ */
+export async function findVehiclesInFeed(feedId: string, keys: string[]): Promise<VehiclePosition[]> {
+  "use cache";
+  cacheLife({ stale: 20, revalidate: 20, expire: 60 });
+  const feed = feedById(feedId);
+  if (!feed || keys.length === 0) return [];
+  const newest = new Map<string, VehiclePosition>();
+  for (const vp of await fetchFeed(feed)) {
+    if (!matches(vp, keys)) continue;
+    const id = vehicleKey(feed, vp) ?? "";
+    const seen = newest.get(id);
+    if (!seen || (vp.timestamp ?? 0) > (seen.timestamp ?? 0)) newest.set(id, vp);
+  }
+  return [...newest.values()].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
+}
+
+/**
+ * Finds one vehicle in a feed.
  * @param feedId Feed to search.
  * @param keys Normalised identifiers (vehicle id, fleet number, plate) to match.
  * @returns The newest matching position, or null.
  */
 export async function findVehicleInFeed(feedId: string, keys: string[]): Promise<VehiclePosition | null> {
-  "use cache";
-  cacheLife({ stale: 20, revalidate: 20, expire: 60 });
-  const feed = feedById(feedId);
-  if (!feed || keys.length === 0) return null;
-  const hits = (await fetchFeed(feed)).filter((vp) => matches(vp, keys));
-  hits.sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
-  return hits[0] ?? null;
+  return (await findVehiclesInFeed(feedId, keys))[0] ?? null;
 }
 
 /**
- * Searches every enabled feed for a vehicle matching one identifier.
+ * Searches every enabled feed for vehicles matching one identifier.
  * @param key Normalised identifier typed by the user.
- * @returns All matching positions across feeds.
+ * @returns Every matching vehicle across feeds, at most MAX_LIVE_RESULTS.
  */
 export async function searchFeeds(key: string): Promise<VehiclePosition[]> {
-  const results = await Promise.all(enabledFeeds().map((feed) => findVehicleInFeed(feed.id, [key])));
-  return results.filter((vp): vp is VehiclePosition => vp !== null);
+  const results = await Promise.all(enabledFeeds().map((feed) => findVehiclesInFeed(feed.id, [key])));
+  return results.flat().slice(0, MAX_LIVE_RESULTS);
 }
