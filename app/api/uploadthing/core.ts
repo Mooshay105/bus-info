@@ -2,7 +2,8 @@ import { getAuthorName, getUserId } from "@/lib/auth";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { getBus } from "@/lib/buses";
-import { readyDb } from "@/lib/db";
+import { getDb } from "@/lib/db";
+import { photos } from "@/db/schema";
 import { notifyAdmin } from "@/lib/notify";
 
 const f = createUploadthing();
@@ -32,9 +33,12 @@ export const fileRouter = {
       return { userId, busId: input.busId, author: await getAuthorName() };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      await (await readyDb()).execute({
-        sql: "INSERT INTO photos (bus_id, url, file_key, user_id, author) VALUES (?, ?, ?, ?, ?)",
-        args: [metadata.busId, file.ufsUrl, file.key, metadata.userId, metadata.author],
+      await (await getDb()).insert(photos).values({
+        bus_id: metadata.busId,
+        url: file.ufsUrl,
+        file_key: file.key,
+        user_id: metadata.userId,
+        author: metadata.author,
       });
       await notifyAdmin(`Photo uploaded for bus #${metadata.busId}`, [
         `${metadata.author ?? "Someone"} uploaded a photo of bus #${metadata.busId}:`,

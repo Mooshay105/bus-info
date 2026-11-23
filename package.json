@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "bun scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio",
     "import:feed": "bun scripts/sync.ts --apply --changes none",
     "sync": "bun scripts/sync.ts"
   },
@@ -16,6 +17,8 @@
     "@clerk/nextjs": "^7.9.26",
     "@libsql/client": "^0.18.0",
     "@uploadthing/react": "^7.3.3",
+    "drizzle-kit": "^0.31.11",
+    "drizzle-orm": "^0.45.4",
     "next": "16.4.6",
     "posthog-js": "^1.448.0",
     "react": "19.3.0",

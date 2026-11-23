@@ -1,6 +1,8 @@
 import "server-only";
 import { Resend } from "resend";
-import { readyDb } from "./db";
+import { eq } from "drizzle-orm";
+import { edits as editTable, photos as photoTable } from "@/db/schema";
+import { getDb } from "./db";
 import { emailEnabled } from "./features";
 
 /** Sender used when RESEND_FROM is not set. Resend only delivers it to the address that owns the Resend account. */
@@ -23,10 +25,10 @@ function reviewUrl(): string | null {
 export async function notifyAdmin(subject: string, lines: string[]): Promise<void> {
   if (!emailEnabled()) return;
   try {
-    const db = await readyDb();
+    const db = await getDb();
     const [edits, photos] = await Promise.all([
-      db.execute("SELECT count(*) AS n FROM edits WHERE status = 'pending'"),
-      db.execute("SELECT count(*) AS n FROM photos WHERE status = 'pending'"),
+      db.$count(editTable, eq(editTable.status, "pending")),
+      db.$count(photoTable, eq(photoTable.status, "pending")),
     ]);
     const link = reviewUrl();
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
@@ -36,7 +38,7 @@ export async function notifyAdmin(subject: string, lines: string[]): Promise<voi
       text: [
         ...lines,
         "",
-        `Waiting for review: ${edits.rows[0].n} edits, ${photos.rows[0].n} photos.`,
+        `Waiting for review: ${edits} edits, ${photos} photos.`,
         link ? `Review them at ${link}` : "Review them on the site's admin page.",
       ].join("\n"),
     });

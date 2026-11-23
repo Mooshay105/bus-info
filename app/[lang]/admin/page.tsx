@@ -6,7 +6,9 @@ import { getUserId } from "@/lib/auth";
 import { getDictionary, getLocale, type Dictionary, type Locale } from "../dictionaries";
 import { reviewEdit, reviewPhoto } from "../actions";
 import { isAdmin } from "@/lib/admin";
-import { query } from "@/lib/db";
+import { asc, eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { edits as editTable, photos as photoTable } from "@/db/schema";
 
 export default async function AdminPage() {
   const lang = await getLocale();
@@ -42,13 +44,26 @@ async function Queue({ lang, dict }: { lang: Locale; dict: Dictionary }) {
   const userId = await getUserId();
   if (!isAdmin(userId)) return <p className="mt-6">{dict.admin.forbidden}</p>;
 
+  const db = await getDb();
   const [edits, photos] = await Promise.all([
-    query<{ id: number; bus_id: number | null; author: string | null; changes: string; created_at: string }>(
-      "SELECT id, bus_id, author, changes, created_at FROM edits WHERE status = 'pending' ORDER BY id LIMIT 100",
-    ),
-    query<{ id: number; bus_id: number; url: string; author: string | null }>(
-      "SELECT id, bus_id, url, author FROM photos WHERE status = 'pending' ORDER BY id LIMIT 100",
-    ),
+    db
+      .select({
+        id: editTable.id,
+        bus_id: editTable.bus_id,
+        author: editTable.author,
+        changes: editTable.changes,
+        created_at: editTable.created_at,
+      })
+      .from(editTable)
+      .where(eq(editTable.status, "pending"))
+      .orderBy(asc(editTable.id))
+      .limit(100),
+    db
+      .select({ id: photoTable.id, bus_id: photoTable.bus_id, url: photoTable.url, author: photoTable.author })
+      .from(photoTable)
+      .where(eq(photoTable.status, "pending"))
+      .orderBy(asc(photoTable.id))
+      .limit(100),
   ]);
 
   if (edits.length === 0 && photos.length === 0) return <p className="mt-6 text-muted">{dict.admin.empty}</p>;
