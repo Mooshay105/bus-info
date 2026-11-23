@@ -8,6 +8,8 @@
     "vercel-build": "bun scripts/sync.ts --apply --deploy && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "bun test",
     "db:migrate": "bun scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "import:feed": "bun scripts/sync.ts --apply --changes none",
