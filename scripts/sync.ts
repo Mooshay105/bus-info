@@ -1,5 +1,5 @@
+import type { InArgs } from "@libsql/client";
 import { eq, sql } from "drizzle-orm";
-import type { BatchItem } from "drizzle-orm/batch";
 import { createDb } from "../db/client";
 import { selectBuses, upsertLastSeen, upsertOperator } from "../db/queries";
 import { applySchema, buses } from "../db/schema";
@@ -336,19 +336,20 @@ const columns = (r: Row): typeof buses.$inferInsert => ({
   source: r.source,
 });
 
-const inBatches = async <T extends BatchItem<"sqlite">>(queries: T[]) => {
+const inBatches = async (queries: { toSQL(): { sql: string; params: unknown[] } }[]) => {
   const results = [];
   for (let i = 0; i < queries.length; i += 200) {
-    const chunk = queries.slice(i, i + 200) as [T, ...T[]];
-    results.push(...(await db.batch(chunk)));
+    const statements = queries.slice(i, i + 200).map((q) => {
+      const query = q.toSQL();
+      return { sql: query.sql, args: query.params as InArgs };
+    });
+    results.push(...(await db.$client.batch(statements, "write")));
   }
   return results;
 };
 
-const insertResults = (await inBatches(
-  inserts.map((r) => db.insert(buses).values(columns(r)).returning({ id: buses.id })),
-)) as { id: number }[][];
-inserts.forEach((r, i) => (r.id = insertResults[i][0].id));
+const insertResults = await inBatches(inserts.map((r) => db.insert(buses).values(columns(r)).returning({ id: buses.id })));
+inserts.forEach((r, i) => (r.id = Number(insertResults[i].rows[0].id)));
 
 await inBatches(
   updates.map(({ row }) =>
