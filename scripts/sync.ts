@@ -1,10 +1,13 @@
-import { createClient, type InStatement } from "@libsql/client";
-import { applySchema } from "../db/schema";
+import { eq, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
+import { createDb } from "../db/client";
+import { selectBuses, upsertLastSeen, upsertOperator } from "../db/queries";
+import { applySchema, buses } from "../db/schema";
 import { parseCsv } from "../lib/csv";
 import { downloadFeed } from "../lib/feeds/download";
 import { FEEDS, feedById, fleetNumber, guessFleetFromId, vehicleKey, type FeedConfig } from "../lib/feeds/registry";
 import { normalizeKey } from "../lib/normalize";
-import { COUNTRIES, EDITABLE_FIELDS, FIRST_REGISTERED_PATTERN, STATUSES, type VehiclePosition } from "../lib/types";
+import { COUNTRIES, EDITABLE_FIELDS, FIRST_REGISTERED_PATTERN, STATUSES, type Country, type VehiclePosition } from "../lib/types";
 
 const USAGE = `Usage: bun run sync [feed id ...] [--changes <file>|none] [--apply] [--deploy]
 
@@ -24,7 +27,7 @@ type Value = string | number | null;
 
 interface Row {
   id: number | null;
-  country: string;
+  country: Country;
   plate: string | null;
   fleet_number: string | null;
   fleet_guessed: number;
@@ -115,17 +118,10 @@ for (const id of feedArgs.length === 0 || feedArgs.includes("all") ? ["all"] : f
   selected.push(feed);
 }
 
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL || "file:local.db",
-  authToken: process.env.TURSO_AUTH_TOKEN || undefined,
-});
-await applySchema(client);
+const db = createDb(process.env.TURSO_DATABASE_URL || "file:local.db", process.env.TURSO_AUTH_TOKEN);
+await applySchema(db.$client);
 
-const loaded = (
-  await client.execute(`SELECT b.id, b.country, b.plate, b.fleet_number, b.fleet_guessed, b.gtfs_vehicle_id, b.feed_id,
-    o.name AS operator_name, b.make, b.model, b.body, b.year_built, b.first_registered, b.fuel, b.colour, b.status, b.source
-    FROM buses b LEFT JOIN operators o ON o.id = b.operator_id`)
-).rows.map((r) => ({ ...r }) as unknown as Row);
+const loaded: Row[] = await selectBuses(db);
 
 const original = new Map<number, Row>(loaded.map((r) => [r.id as number, { ...r }]));
 const rows: Row[] = loaded;
@@ -305,7 +301,7 @@ console.log(`\nSummary
 
 if (!apply) {
   console.log("\nDry run: nothing written. Run again with --apply to save.");
-  client.close();
+  db.$client.close();
   process.exit(0);
 }
 
@@ -314,16 +310,11 @@ const operatorKey = (r: Row) => `${r.country}|${r.operator_name}`;
 for (const row of [...inserts, ...updates.map((u) => u.row)]) {
   if (!row.operator_name || operatorIds.has(operatorKey(row))) continue;
   const feed = feedById(row.feed_id);
-  const result = await client.execute({
-    sql: `INSERT INTO operators (name, country, feed_id) VALUES (?, ?, ?)
-          ON CONFLICT (name, country) DO UPDATE SET feed_id = COALESCE(operators.feed_id, excluded.feed_id)
-          RETURNING id`,
-    args: [row.operator_name, row.country, feed && feed.name === row.operator_name ? feed.id : null],
-  });
-  operatorIds.set(operatorKey(row), Number(result.rows[0].id));
+  const result = await upsertOperator(db, row.operator_name, row.country, feed && feed.name === row.operator_name ? feed.id : null).get();
+  operatorIds.set(operatorKey(row), result!.id);
 }
 
-const columns = (r: Row): Record<string, Value> => ({
+const columns = (r: Row): typeof buses.$inferInsert => ({
   country: r.country,
   plate: r.plate,
   plate_norm: r.plate ? normalizeKey(r.plate) : null,
@@ -345,44 +336,30 @@ const columns = (r: Row): Record<string, Value> => ({
   source: r.source,
 });
 
-const inBatches = async (statements: InStatement[]) => {
+const inBatches = async <T extends BatchItem<"sqlite">>(queries: T[]) => {
   const results = [];
-  for (let i = 0; i < statements.length; i += 200) results.push(...(await client.batch(statements.slice(i, i + 200), "write")));
+  for (let i = 0; i < queries.length; i += 200) {
+    const chunk = queries.slice(i, i + 200) as [T, ...T[]];
+    results.push(...(await db.batch(chunk)));
+  }
   return results;
 };
 
-const insertResults = await inBatches(
-  inserts.map((r) => {
-    const values = columns(r);
-    const names = Object.keys(values);
-    return {
-      sql: `INSERT INTO buses (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")}) RETURNING id`,
-      args: names.map((n) => values[n]),
-    };
-  }),
-);
-inserts.forEach((r, i) => (r.id = Number(insertResults[i].rows[0].id)));
+const insertResults = (await inBatches(
+  inserts.map((r) => db.insert(buses).values(columns(r)).returning({ id: buses.id })),
+)) as { id: number }[][];
+inserts.forEach((r, i) => (r.id = insertResults[i][0].id));
 
 await inBatches(
-  updates.map(({ row }) => {
-    const values = columns(row);
-    const names = Object.keys(values);
-    return {
-      sql: `UPDATE buses SET ${names.map((n) => `${n} = ?`).join(", ")}, updated_at = datetime('now') WHERE id = ?`,
-      args: [...names.map((n) => values[n]), row.id],
-    };
-  }),
+  updates.map(({ row }) =>
+    db
+      .update(buses)
+      .set({ ...columns(row), updated_at: sql`datetime('now')` })
+      .where(eq(buses.id, row.id!)),
+  ),
 );
 
-await inBatches(
-  [...positions].map(([row, vp]) => ({
-    sql: `INSERT INTO last_seen (bus_id, lat, lon, bearing, speed, route_id, seen_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT (bus_id) DO UPDATE SET lat = excluded.lat, lon = excluded.lon, bearing = excluded.bearing,
-            speed = excluded.speed, route_id = excluded.route_id, seen_at = excluded.seen_at
-          WHERE excluded.seen_at >= last_seen.seen_at`,
-    args: [row.id, vp.lat, vp.lon, vp.bearing, vp.speed, vp.routeId, vp.timestamp ?? Math.floor(Date.now() / 1000)],
-  })),
-);
+await inBatches([...positions].map(([row, vp]) => upsertLastSeen(db, row.id!, vp)));
 
 console.log(`\nSaved: ${inserts.length} new, ${updates.length} updated, ${positions.size} positions.`);
-client.close();
+db.$client.close();

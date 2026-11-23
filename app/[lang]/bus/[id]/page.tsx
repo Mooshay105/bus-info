@@ -13,7 +13,9 @@ import { suggestEdit } from "../../actions";
 import { LiveMap } from "./live-map";
 import { PhotoUpload } from "./photo-upload";
 import { getBus, getLastSeen } from "@/lib/buses";
-import { query } from "@/lib/db";
+import { and, desc, eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { photos as photoTable } from "@/db/schema";
 import { busAge } from "@/lib/age";
 import { commonsPhotos } from "@/lib/images/commons";
 import { formatPlate } from "@/lib/normalize";
@@ -133,10 +135,13 @@ async function Photos({ bus, dict }: { bus: Bus; dict: Dictionary }) {
     bus.fleet_number && operator ? `${operator} ${bus.fleet_number}` : "",
   ];
   const [uploads, commons] = await Promise.all([
-    query<{ url: string; author: string | null }>({
-      sql: "SELECT url, author FROM photos WHERE bus_id = ? AND status = 'approved' ORDER BY id DESC",
-      args: [bus.id],
-    }),
+    getDb().then((db) =>
+      db
+        .select({ url: photoTable.url, author: photoTable.author })
+        .from(photoTable)
+        .where(and(eq(photoTable.bus_id, bus.id), eq(photoTable.status, "approved")))
+        .orderBy(desc(photoTable.id)),
+    ),
     commonsPhotos(terms),
   ]);
   const photos: Photo[] = [

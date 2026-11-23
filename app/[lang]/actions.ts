@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { readyDb, queryOne } from "@/lib/db";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { edits, photos } from "@/db/schema";
 import { applyChanges, getBus } from "@/lib/buses";
 import { isAdmin } from "@/lib/admin";
 import { getAuthorName, getUserId } from "@/lib/auth";
@@ -44,10 +46,7 @@ export async function suggestEdit(busId: number, _prev: FormState, formData: For
   }
   if (Object.keys(diff).length === 0) return { ok: true };
   const author = await getAuthorName();
-  await (await readyDb()).execute({
-    sql: "INSERT INTO edits (bus_id, user_id, author, changes) VALUES (?, ?, ?, ?)",
-    args: [busId, userId, author, JSON.stringify(diff)],
-  });
+  await (await getDb()).insert(edits).values({ bus_id: busId, user_id: userId, author, changes: JSON.stringify(diff) });
   const name = bus.fleet_number ?? bus.plate ?? bus.gtfs_vehicle_id ?? "";
   after(() =>
     notifyAdmin(`Correction for bus #${busId}`, [`${author ?? "Someone"} suggested changes to bus #${busId} ${name}:`, ...describe(diff)]),
@@ -61,10 +60,7 @@ export async function proposeBus(_prev: FormState, formData: FormData): Promise<
   const changes = Object.fromEntries(Object.entries(readChanges(formData)).filter(([, v]) => v !== ""));
   if (!changes.country || (!changes.plate && !changes.fleet_number)) return { ok: false, error: "required" };
   const author = await getAuthorName();
-  await (await readyDb()).execute({
-    sql: "INSERT INTO edits (bus_id, user_id, author, changes) VALUES (NULL, ?, ?, ?)",
-    args: [userId, author, JSON.stringify(changes)],
-  });
+  await (await getDb()).insert(edits).values({ bus_id: null, user_id: userId, author, changes: JSON.stringify(changes) });
   after(() => notifyAdmin("New bus proposed", [`${author ?? "Someone"} proposed a new bus:`, ...describe(changes)]));
   return { ok: true };
 }
@@ -78,13 +74,15 @@ export async function reviewEdit(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = Number(formData.get("id"));
   const approve = formData.get("decision") === "approve";
-  const edit = await queryOne<{ bus_id: number | null; changes: string }>({
-    sql: "SELECT bus_id, changes FROM edits WHERE id = ? AND status = 'pending'",
-    args: [id],
-  });
+  const db = await getDb();
+  const edit = await db
+    .select({ bus_id: edits.bus_id, changes: edits.changes })
+    .from(edits)
+    .where(and(eq(edits.id, id), eq(edits.status, "pending")))
+    .get();
   if (!edit) return;
-  if (approve) await applyChanges(edit.bus_id == null ? null : Number(edit.bus_id), JSON.parse(edit.changes) as BusChanges);
-  await (await readyDb()).execute({ sql: "UPDATE edits SET status = ? WHERE id = ?", args: [approve ? "approved" : "rejected", id] });
+  if (approve) await applyChanges(edit.bus_id, JSON.parse(edit.changes) as BusChanges);
+  await db.update(edits).set({ status: approve ? "approved" : "rejected" }).where(eq(edits.id, id));
   revalidatePath("/[lang]/admin", "page");
 }
 
@@ -92,9 +90,9 @@ export async function reviewPhoto(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = Number(formData.get("id"));
   const approve = formData.get("decision") === "approve";
-  await (await readyDb()).execute({
-    sql: "UPDATE photos SET status = ? WHERE id = ? AND status = 'pending'",
-    args: [approve ? "approved" : "rejected", id],
-  });
+  await (await getDb())
+    .update(photos)
+    .set({ status: approve ? "approved" : "rejected" })
+    .where(and(eq(photos.id, id), eq(photos.status, "pending")));
   revalidatePath("/[lang]/admin", "page");
 }
